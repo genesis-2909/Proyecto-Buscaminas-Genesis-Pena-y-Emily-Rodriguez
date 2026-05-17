@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'instrucciones_screen.dart';
 import 'settings_screen.dart';
+import 'game_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -45,7 +46,12 @@ class MenuScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 50),
-                _buildMenuButton(context, 'JUGAR', Colors.green, () {}),
+                _buildMenuButton(context, 'JUGAR', Colors.green, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const GameScreen()),
+                  );
+                }),
                 _buildMenuButton(context, 'MARCADORES', Colors.blue, () {}),
                 _buildMenuButton(context, 'CONFIGURACION', Colors.orange, () {
                   Navigator.push(
