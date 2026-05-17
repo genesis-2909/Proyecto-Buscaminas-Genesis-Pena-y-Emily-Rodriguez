@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'instrucciones_screen.dart';
+import 'settings_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -26,10 +27,19 @@ class MenuScreen extends StatelessWidget {
                       fontFamily: 'Impact',
                       letterSpacing: 4,
                       shadows: [
-                        Shadow(offset: const Offset(-3, -3), color: Colors.black),
-                        Shadow(offset: const Offset(3, -3), color: Colors.black),
+                        Shadow(
+                          offset: const Offset(-3, -3),
+                          color: Colors.black,
+                        ),
+                        Shadow(
+                          offset: const Offset(3, -3),
+                          color: Colors.black,
+                        ),
                         Shadow(offset: const Offset(3, 3), color: Colors.black),
-                        Shadow(offset: const Offset(-3, 3), color: Colors.black),
+                        Shadow(
+                          offset: const Offset(-3, 3),
+                          color: Colors.black,
+                        ),
                       ],
                     ),
                   ),
@@ -37,11 +47,20 @@ class MenuScreen extends StatelessWidget {
                 const SizedBox(height: 50),
                 _buildMenuButton(context, 'JUGAR', Colors.green, () {}),
                 _buildMenuButton(context, 'MARCADORES', Colors.blue, () {}),
-                _buildMenuButton(context, 'CONFIGURACION', Colors.orange, () {}),
+                _buildMenuButton(context, 'CONFIGURACION', Colors.orange, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                }),
                 _buildMenuButton(context, 'INSTRUCCIONES', Colors.purple, () {
                   Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const InstructionsScreen()),
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const InstructionsScreen(),
+                    ),
                   );
                 }),
               ],
@@ -52,7 +71,12 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuButton(BuildContext context, String text, Color color, VoidCallback onPressed) {
+  Widget _buildMenuButton(
+    BuildContext context,
+    String text,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return FadeInUp(
       duration: const Duration(milliseconds: 1000),
       child: Container(
