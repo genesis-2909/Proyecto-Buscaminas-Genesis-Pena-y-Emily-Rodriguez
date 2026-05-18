@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../core/game_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -28,6 +29,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Cambiar dificultad y guardarla de forma persistente
   void _selectDifficulty(String name, int rows, int cols, int mines) async {
+    final player = AudioPlayer();
+    player.play(AssetSource('audio/click.mp3'));
     await GamePreferences.saveDifficulty(name, rows, cols, mines);
     setState(() {
       _currentDificulty = name;
@@ -36,7 +39,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Ventana emergente opcional confirmando el guardado
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Configuración guardada: $name ($rows x $cols)'),
+        content: Text(
+          'Configuración guardada: $name ($rows x $cols)',
+          style: const TextStyle(fontFamily: 'PixelFont'),
+        ),
+
         duration: const Duration(milliseconds: 800),
         backgroundColor: Colors.purple,
       ),
@@ -59,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
-                    fontFamily: 'Impact',
+                    fontFamily: 'PixelFont',
                     letterSpacing: 3,
                   ),
                 ),
@@ -70,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: const TextStyle(
                   color: Colors.yellow,
                   fontSize: 18,
-                  fontFamily: 'Impact',
+                  fontFamily: 'PixelFont',
                 ),
               ),
               const SizedBox(height: 40),
@@ -120,10 +127,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       side: BorderSide(color: Colors.white, width: 3),
                     ),
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    //  Reproduce el sonido antes de salir de la pantalla
+                    final player = AudioPlayer();
+                    player.play(AssetSource('audio/click.mp3'));
+                    Navigator.pop(context);
+                  },
                   child: const Text(
                     'VOLVER',
-                    style: TextStyle(fontFamily: 'Impact', fontSize: 18),
+                    style: TextStyle(fontFamily: 'PixelFont', fontSize: 18),
                   ),
                 ),
               ),
@@ -164,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Text(
           label,
           style: const TextStyle(
-            fontFamily: 'Impact',
+            fontFamily: 'PixelFont',
             fontSize: 18,
             letterSpacing: 1,
           ),

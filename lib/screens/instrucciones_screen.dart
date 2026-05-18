@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class InstructionsScreen extends StatelessWidget {
   const InstructionsScreen({super.key});
@@ -18,7 +19,7 @@ class InstructionsScreen extends StatelessWidget {
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  fontFamily: 'Arial Black',
+                  fontFamily: 'PixelFont',
                 ),
               ),
               const SizedBox(height: 20),
@@ -27,23 +28,28 @@ class InstructionsScreen extends StatelessWidget {
                   children: const [
                     _InstructionTile(
                       number: '1',
-                      text: 'El juego consiste en descubrir todas las casillas del tablero sin tocar las minas ocultas.',
+                      text:
+                          'El juego consiste en descubrir todas las casillas del tablero sin tocar las minas ocultas.',
                     ),
                     _InstructionTile(
                       number: '2',
-                      text: 'Haz clic en una casilla para revelar lo que hay debajo.',
+                      text:
+                          'Haz clic en una casilla para revelar lo que hay debajo.',
                     ),
                     _InstructionTile(
                       number: '3',
-                      text: 'Los numeros indican cuantas minas hay en las casillas adyacentes.',
+                      text:
+                          'Los numeros indican cuantas minas hay en las casillas adyacentes.',
                     ),
                     _InstructionTile(
                       number: '4',
-                      text: 'Usa el clic largo para colocar banderas y marcar donde creas que hay minas.',
+                      text:
+                          'Usa el clic largo para colocar banderas y marcar donde creas que hay minas.',
                     ),
                     _InstructionTile(
                       number: '5',
-                      text: 'Ganas al revelar todas las casillas seguras. Puedes variar el tamaño del tablero en las dificultades.',
+                      text:
+                          'Ganas al revelar todas las casillas seguras. Puedes variar el tamaño del tablero en las dificultades.',
                     ),
                     SizedBox(height: 30),
                     Text(
@@ -53,7 +59,7 @@ class InstructionsScreen extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
                         color: Colors.purpleAccent,
-                        fontFamily: 'Arial Black',
+                        fontFamily: 'PixelFont',
                       ),
                     ),
                     SizedBox(height: 10),
@@ -63,7 +69,7 @@ class InstructionsScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'PixelFont',
                       ),
                     ),
                   ],
@@ -82,13 +88,19 @@ class InstructionsScreen extends StatelessWidget {
                       side: BorderSide(color: Colors.white, width: 3),
                     ),
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    //  Reproduce el sonido antes de salir de la pantalla
+                    final player = AudioPlayer();
+                    player.play(AssetSource('audio/click.mp3'));
+
+                    Navigator.pop(context);
+                  },
                   child: const Text(
                     'VOLVER',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
-                      fontFamily: 'Arial Black',
+                      fontFamily: 'PixelFont',
                     ),
                   ),
                 ),
@@ -125,7 +137,7 @@ class _InstructionTile extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
-                fontFamily: 'Arial Black',
+                fontFamily: 'PixelFont',
               ),
             ),
           ),
@@ -137,6 +149,7 @@ class _InstructionTile extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 16,
                 height: 1.4,
+                fontFamily: 'PixelFont',
               ),
             ),
           ),

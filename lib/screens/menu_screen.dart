@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'instrucciones_screen.dart';
 import 'settings_screen.dart';
 import 'game_screen.dart';
+import 'scores_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -68,7 +69,15 @@ class MenuScreen extends StatelessWidget {
                   context,
                   'MARCADORES',
                   Colors.blue,
-                  () {},
+                  () {
+                    // ¡ARREGLADO! Ahora el botón ya sabe abrir la pantalla de Scores
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScoresScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _buildMenuButton(
                   audioPlayer,
@@ -104,7 +113,7 @@ class MenuScreen extends StatelessWidget {
         ),
       ),
     );
-  } //
+  }
 
   Widget _buildMenuButton(
     AudioPlayer player,
@@ -130,7 +139,6 @@ class MenuScreen extends StatelessWidget {
             ),
           ),
           onPressed: () {
-            // CAMBIO 2: Cambiamos '_playClickSound()' por la reproducción real usando el 'player'
             player.play(AssetSource('audio/click.mp3')).catchError((e) {
               print("Error de audio: $e");
             });
@@ -141,8 +149,7 @@ class MenuScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w900,
-              fontFamily:
-                  'PixelFont', // <-- CAMBIO 3: Cambiado 'Impact' por 'PixelFont'
+              fontFamily: 'PixelFont',
               letterSpacing: 2,
             ),
           ),

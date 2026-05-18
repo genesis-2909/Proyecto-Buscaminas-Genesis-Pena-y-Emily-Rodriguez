@@ -29,13 +29,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: ZoomIn(
           duration: const Duration(seconds: 2),
           child: Text(
-            'BUSCAMINAS',
+            'BUSCAMINAS FLUTTER',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 52,
               fontWeight: FontWeight.w900,
               color: Colors.white,
-              fontFamily: 'Impact',
+              fontFamily: 'PixelFont',
               letterSpacing: 3,
               shadows: [
                 Shadow(offset: const Offset(-2, -2), color: Colors.black),

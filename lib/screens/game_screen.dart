@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/game_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:proyecto_buscaminas/models/board_model.dart';
 import 'package:proyecto_buscaminas/models/cell_model.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -79,13 +82,31 @@ class _GameScreenState extends State<GameScreen> {
         message: 'Pisaste una mina. Inténtalo de nuevo.',
         color: Colors.red,
       );
-    } else if (_board!.isGameWon) {
-      _showEndDialog(
-        title: '¡VICTORIA!',
-        message: '¡Ganaste en $_secondsElapsed segundos!',
-        color: Colors.green,
-      );
-      // Aquí conectaremos luego el guardado en los marcadores
+    } else {
+      bool hasWon = true;
+      for (var row in _board!.cells) {
+        for (var cell in row) {
+          if (!cell.isMine && !cell.isRevealed) {
+            hasWon = false;
+            break;
+          }
+        }
+      }
+
+      if (hasWon) {
+        setState(() {
+          _board!.isGameWon = true;
+        });
+
+        // Ejecuta el guardado
+        _saveCurrentGameScore();
+
+        _showEndDialog(
+          title: '¡VICTORIA!',
+          message: '¡Ganaste en $_secondsElapsed segundos!',
+          color: Colors.green,
+        );
+      }
     }
   }
 
@@ -116,35 +137,45 @@ class _GameScreenState extends State<GameScreen> {
         title: Text(
           title,
           style: TextStyle(
-            fontFamily: 'Impact',
+            fontFamily: 'PixelFont',
             color: color,
-            fontSize: 28,
+            fontSize: 26,
             letterSpacing: 2,
           ),
         ),
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontFamily: 'PixelFont',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () {
+              //  Sonido para Reintentar
+              final player = AudioPlayer();
+              player.play(AssetSource('audio/click.mp3'));
               Navigator.pop(context);
               _setupGame(); // Reinicia el juego
             },
             child: const Text(
               'REINTENTAR',
-              style: TextStyle(color: Colors.yellow, fontFamily: 'Impact'),
+              style: TextStyle(color: Colors.yellow, fontFamily: 'PixelFont'),
             ),
           ),
           TextButton(
             onPressed: () {
+              // Sonido para ir al Menú
+              final player = AudioPlayer();
+              player.play(AssetSource('audio/click.mp3'));
               Navigator.pop(context); // Cierra el diálogo
               Navigator.pop(context); // Vuelve al menú
             },
             child: const Text(
               'MENU',
-              style: TextStyle(color: Colors.white, fontFamily: 'Impact'),
+              style: TextStyle(color: Colors.white, fontFamily: 'PixelFont'),
             ),
           ),
         ],
@@ -169,7 +200,6 @@ class _GameScreenState extends State<GameScreen> {
         child: Column(
           children: [
             const SizedBox(height: 15),
-            // CABECERA DEL JUEGO (Dificultad y Cronómetro)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Row(
@@ -179,8 +209,8 @@ class _GameScreenState extends State<GameScreen> {
                     _difficultyName.toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
-                      fontFamily: 'Impact',
+                      fontSize: 18,
+                      fontFamily: 'PixelFont',
                       letterSpacing: 1,
                     ),
                   ),
@@ -201,9 +231,9 @@ class _GameScreenState extends State<GameScreen> {
                           _secondsElapsed.toString().padLeft(3, '0'),
                           style: const TextStyle(
                             color: Colors.red,
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Courier',
+                            fontFamily: 'PixelFont',
                           ),
                         ),
                       ],
@@ -214,17 +244,14 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(height: 20),
 
-            // CONTENEDOR DEL TABLERO DE JUEGO
             Expanded(
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: AspectRatio(
-                    aspectRatio:
-                        1, // Mantiene el tablero perfectamente cuadrado
+                    aspectRatio: 1,
                     child: GridView.builder(
-                      physics:
-                          const NeverScrollableScrollPhysics(), // Evita que el tablero se desplace
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: _board!.rows * _board!.cols,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: _board!.cols,
@@ -248,7 +275,6 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
 
-            // BOTÓN DE REINICIAR / VOLVER
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: SizedBox(
@@ -263,12 +289,17 @@ class _GameScreenState extends State<GameScreen> {
                       side: BorderSide(color: Colors.white, width: 3),
                     ),
                   ),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    // Sonido de clic al abandonar la partida
+                    final player = AudioPlayer();
+                    player.play(AssetSource('audio/click.mp3'));
+                    Navigator.pop(context);
+                  },
                   child: const Text(
                     'ABANDONAR PARTIDA',
                     style: TextStyle(
-                      fontFamily: 'Impact',
-                      fontSize: 18,
+                      fontFamily: 'PixelFont',
+                      fontSize: 16,
                       letterSpacing: 1,
                     ),
                   ),
@@ -281,7 +312,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Dibuja visualmente cada celda dependiendo de su estado interno
   Widget _buildCellWidget(CellModel cell) {
     if (!cell.isRevealed) {
       return Container(
@@ -292,19 +322,13 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
 
-    // Si ya fue revelada y es una mina
     if (cell.isMine) {
       return Container(
         color: Colors.red[900],
-        child: const Icon(
-          Icons.brightness_7,
-          color: Colors.white,
-          size: 20,
-        ), // Icono tipo mina/bomba
+        child: const Icon(Icons.brightness_7, color: Colors.white, size: 20),
       );
     }
 
-    // Si fue revelada y está vacía o tiene números vecinos
     return Container(
       color: Colors.blueGrey[300],
       alignment: Alignment.center,
@@ -314,6 +338,7 @@ class _GameScreenState extends State<GameScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
+                fontFamily: 'PixelFont',
                 color: _getMineNumberColor(cell.adjacentMines),
               ),
             )
@@ -321,7 +346,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Colores clásicos de los números del Buscaminas original
   Color _getMineNumberColor(int number) {
     switch (number) {
       case 1:
@@ -334,6 +358,40 @@ class _GameScreenState extends State<GameScreen> {
         return Colors.purple[900]!;
       default:
         return Colors.black;
+    }
+  }
+
+  void _saveCurrentGameScore() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      String? scoresRaw = prefs.getString('high_scores');
+      List<dynamic> scoresList = [];
+      if (scoresRaw != null) {
+        scoresList = jsonDecode(scoresRaw);
+      }
+
+      DateTime now = DateTime.now();
+      String formattedDate =
+          "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
+
+      String diffName = _difficultyName;
+      if (diffName == 'Principiante') diffName = 'Fácil';
+      if (diffName == 'Intermedio') diffName = 'Medio';
+      if (diffName == 'Avanzado') diffName = 'Difícil';
+
+      Map<String, dynamic> newRecord = {
+        'difficulty': diffName,
+        'time': _secondsElapsed,
+        'attempts': 1,
+        'date': formattedDate,
+      };
+
+      scoresList.add(newRecord);
+      await prefs.setString('high_scores', jsonEncode(scoresList));
+      print("¡Récord guardado con éxito localmente!");
+    } catch (e) {
+      print("Error guardando el puntaje: $e");
     }
   }
 }

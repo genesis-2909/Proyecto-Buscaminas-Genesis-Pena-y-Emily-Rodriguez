@@ -65,3 +65,4 @@ flutter:
     - family: PixelFont
       fonts:
         - asset: assets/fonts/pixel.ttf
+
