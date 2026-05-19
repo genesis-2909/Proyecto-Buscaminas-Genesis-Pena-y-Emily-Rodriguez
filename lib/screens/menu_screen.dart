@@ -1,19 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../core/game_preferences.dart';
 import 'instrucciones_screen.dart';
 import 'settings_screen.dart';
 import 'game_screen.dart';
 import 'scores_screen.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  bool _isDarkMode = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTheme();
+  }
+
+  // Carga el tema activo de SharedPreferences de forma segura
+  void _updateTheme() async {
+    final savedTheme = await GamePreferences.getTheme();
+    setState(() {
+      _isDarkMode = savedTheme;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final audioPlayer = AudioPlayer();
+    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color textColor = _isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
-      backgroundColor: Colors.blueGrey[900],
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -27,29 +52,19 @@ class MenuScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 56,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: textColor,
                       fontFamily: 'PixelFont',
                       letterSpacing: 4,
                       shadows: [
-                        Shadow(
-                          offset: const Offset(-3, -3),
-                          color: Colors.black,
-                        ),
-                        Shadow(
-                          offset: const Offset(3, -3),
-                          color: Colors.black,
-                        ),
-                        Shadow(offset: const Offset(3, 3), color: Colors.black),
-                        Shadow(
-                          offset: const Offset(-3, 3),
-                          color: Colors.black,
-                        ),
+                        Shadow(offset: const Offset(-3, -3), color: _isDarkMode ? Colors.black : Colors.white24),
+                        Shadow(offset: const Offset(3, -3), color: _isDarkMode ? Colors.black : Colors.white24),
+                        Shadow(offset: const Offset(3, 3), color: _isDarkMode ? Colors.black : Colors.white24),
+                        Shadow(offset: const Offset(-3, 3), color: _isDarkMode ? Colors.black : Colors.white24),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 50),
-
+                const SizedBox(height: 60),
                 _buildMenuButton(
                   audioPlayer,
                   context,
@@ -58,53 +73,44 @@ class MenuScreen extends StatelessWidget {
                   () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const GameScreen(),
-                      ),
-                    );
+                      MaterialPageRoute(builder: (context) => const GameScreen()),
+                    ).then((_) => _updateTheme()); // Sincroniza el tema al regresar de la partida
                   },
                 ),
                 _buildMenuButton(
                   audioPlayer,
                   context,
-                  'MARCADORES',
-                  Colors.blue,
+                  'MARCADORES', // Nombre original intacto
+                  Colors.orange,
                   () {
-                    // ¡ARREGLADO! Ahora el botón ya sabe abrir la pantalla de Scores
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const ScoresScreen(),
-                      ),
-                    );
+                      MaterialPageRoute(builder: (context) => const ScoresScreen()),
+                    ).then((_) => _updateTheme());
                   },
                 ),
                 _buildMenuButton(
                   audioPlayer,
                   context,
                   'CONFIGURACION',
-                  Colors.orange,
+                  Colors.purple,
                   () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
-                      ),
-                    );
+                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                    ).then((_) => _updateTheme()); // Cambia el color del menú al volver de ajustes
                   },
                 ),
                 _buildMenuButton(
                   audioPlayer,
                   context,
-                  'INSTRUCCIONES',
-                  Colors.purple,
+                  'INSTRUCCIONES', // Cambiado a INSTRUCCIONES tal como lo pediste
+                  Colors.blue,
                   () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const InstructionsScreen(),
-                      ),
-                    );
+                      MaterialPageRoute(builder: (context) => const InstructionsScreen()),
+                    ).then((_) => _updateTheme());
                   },
                 ),
               ],
@@ -133,9 +139,9 @@ class MenuScreen extends StatelessWidget {
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             elevation: 0,
-            shape: const RoundedRectangleBorder(
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.zero,
-              side: BorderSide(color: Colors.white, width: 4),
+              side: BorderSide(color: _isDarkMode ? Colors.white : Colors.black87, width: 4),
             ),
           ),
           onPressed: () {

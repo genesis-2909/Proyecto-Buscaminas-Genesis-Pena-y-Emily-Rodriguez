@@ -20,6 +20,9 @@ class _GameScreenState extends State<GameScreen> {
   int _secondsElapsed = 0;
   bool _isFirstClick = true;
   String _difficultyName = 'Principiante';
+  
+  // Variable para controlar el tema persistente en la partida
+  bool _isDarkMode = true;
 
   @override
   void initState() {
@@ -33,11 +36,13 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
-  // Carga la dificultad guardada dinámicamente y crea el tablero lógico
+  // Carga la dificultad y el tema guardados dinámicamente y crea el tablero lógico
   void _setupGame() async {
     final prefs = await GamePreferences.getDifficulty();
+    final savedTheme = await GamePreferences.getTheme();
 
     setState(() {
+      _isDarkMode = savedTheme;
       _difficultyName = prefs['name'];
       _board = BoardModel(
         rows: prefs['rows'],
@@ -98,14 +103,19 @@ class _GameScreenState extends State<GameScreen> {
           _board!.isGameWon = true;
         });
 
-        // Ejecuta el guardado
-        _saveCurrentGameScore();
+        // Ejecuta el guardado y evalúa si es récord para armar el mensaje personalizado
+        _saveCurrentGameScore().then((isNewRecord) {
+          String finalMessage = '¡Ganaste en $_secondsElapsed segundos!';
+          if (isNewRecord) {
+            finalMessage += '\n¡NUEVO RÉCORD!'; // Se añade abajo si es récord
+          }
 
-        _showEndDialog(
-          title: '¡VICTORIA!',
-          message: '¡Ganaste en $_secondsElapsed segundos!',
-          color: Colors.green,
-        );
+          _showEndDialog(
+            title: '¡VICTORIA!', // Siempre dirá ¡VICTORIA!
+            message: finalMessage,
+            color: Colors.green,
+          );
+        });
       }
     }
   }
@@ -119,7 +129,7 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
-  // Alerta de fin de partida (Ganar o Perder)
+  // Alerta de fin de partida (Ganar o Perder) adaptado al tema actual
   void _showEndDialog({
     required String title,
     required String message,
@@ -129,7 +139,7 @@ class _GameScreenState extends State<GameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.blueGrey[800],
+        backgroundColor: _isDarkMode ? Colors.blueGrey[800] : Colors.grey[300],
         shape: const RoundedRectangleBorder(
           side: BorderSide(color: Colors.white, width: 3),
           borderRadius: BorderRadius.zero,
@@ -145,8 +155,8 @@ class _GameScreenState extends State<GameScreen> {
         ),
         content: Text(
           message,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _isDarkMode ? Colors.white : Colors.black87,
             fontSize: 16,
             fontFamily: 'PixelFont',
           ),
@@ -154,28 +164,32 @@ class _GameScreenState extends State<GameScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              //  Sonido para Reintentar
               final player = AudioPlayer();
               player.play(AssetSource('audio/click.mp3'));
               Navigator.pop(context);
-              _setupGame(); // Reinicia el juego
+              _setupGame(); 
             },
-            child: const Text(
+            child: Text(
               'REINTENTAR',
-              style: TextStyle(color: Colors.yellow, fontFamily: 'PixelFont'),
+              style: TextStyle(
+                color: _isDarkMode ? Colors.yellow : Colors.purple[700], 
+                fontFamily: 'PixelFont'
+              ),
             ),
           ),
           TextButton(
             onPressed: () {
-              // Sonido para ir al Menú
               final player = AudioPlayer();
               player.play(AssetSource('audio/click.mp3'));
-              Navigator.pop(context); // Cierra el diálogo
-              Navigator.pop(context); // Vuelve al menú
+              Navigator.pop(context); 
+              Navigator.pop(context); 
             },
-            child: const Text(
+            child: Text(
               'MENU',
-              style: TextStyle(color: Colors.white, fontFamily: 'PixelFont'),
+              style: TextStyle(
+                color: _isDarkMode ? Colors.white : Colors.black87, 
+                fontFamily: 'PixelFont'
+              ),
             ),
           ),
         ],
@@ -187,15 +201,18 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     if (_board == null) {
       return Scaffold(
-        backgroundColor: Colors.blueGrey[900],
+        backgroundColor: _isDarkMode ? Colors.blueGrey[900] : Colors.grey[200],
         body: const Center(
           child: CircularProgressIndicator(color: Colors.green),
         ),
       );
     }
 
+    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color textColor = _isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
-      backgroundColor: Colors.blueGrey[900],
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -207,8 +224,8 @@ class _GameScreenState extends State<GameScreen> {
                 children: [
                   Text(
                     _difficultyName.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textColor,
                       fontSize: 18,
                       fontFamily: 'PixelFont',
                       letterSpacing: 1,
@@ -290,7 +307,6 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // Sonido de clic al abandonar la partida
                     final player = AudioPlayer();
                     player.play(AssetSource('audio/click.mp3'));
                     Navigator.pop(context);
@@ -315,7 +331,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildCellWidget(CellModel cell) {
     if (!cell.isRevealed) {
       return Container(
-        color: Colors.blueGrey[700],
+        color: _isDarkMode ? Colors.blueGrey[700] : Colors.grey[400],
         child: cell.isFlagged
             ? const Icon(Icons.flag, color: Colors.orange, size: 20)
             : const SizedBox(),
@@ -330,7 +346,7 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return Container(
-      color: Colors.blueGrey[300],
+      color: _isDarkMode ? Colors.blueGrey[300] : Colors.grey[350],
       alignment: Alignment.center,
       child: cell.adjacentMines > 0
           ? Text(
@@ -361,7 +377,8 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void _saveCurrentGameScore() async {
+  Future<bool> _saveCurrentGameScore() async {
+    bool isNewRecord = false;
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -380,6 +397,22 @@ class _GameScreenState extends State<GameScreen> {
       if (diffName == 'Intermedio') diffName = 'Medio';
       if (diffName == 'Avanzado') diffName = 'Difícil';
 
+      List<dynamic> currentDiffScores = scoresList
+          .where((score) => score['difficulty'] == diffName)
+          .toList();
+
+      if (currentDiffScores.isEmpty) {
+        isNewRecord = true;
+      } else {
+        int bestTime = currentDiffScores
+            .map<int>((score) => score['time'] as int)
+            .reduce((value, element) => value < element ? value : element);
+
+        if (_secondsElapsed < bestTime) {
+          isNewRecord = true;
+        }
+      }
+
       Map<String, dynamic> newRecord = {
         'difficulty': diffName,
         'time': _secondsElapsed,
@@ -389,9 +422,9 @@ class _GameScreenState extends State<GameScreen> {
 
       scoresList.add(newRecord);
       await prefs.setString('high_scores', jsonEncode(scoresList));
-      print("¡Récord guardado con éxito localmente!");
     } catch (e) {
-      print("Error guardando el puntaje: $e");
+      print("Error procesando el puntaje: $e");
     }
+    return isNewRecord;
   }
 }
