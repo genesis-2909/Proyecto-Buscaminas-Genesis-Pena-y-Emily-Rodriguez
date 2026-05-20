@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:convert';
+import '../core/game_preferences.dart';
 
 class ScoresScreen extends StatefulWidget {
   const ScoresScreen({super.key});
@@ -10,221 +11,152 @@ class ScoresScreen extends StatefulWidget {
   State<ScoresScreen> createState() => _ScoresScreenState();
 }
 
-class _ScoresScreenState extends State<ScoresScreen>
-    with SingleTickerProviderStateMixin {
+class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Map<String, dynamic>> _scores = [];
   bool _isLoading = true;
+  bool _isDarkMode = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadScores();
+    _loadScoresAndTheme();
   }
 
-  // Carga los marcadores desde la persistencia local exigida
-  Future<void> _loadScores() async {
+  Future<void> _loadScoresAndTheme() async {
     final prefs = await SharedPreferences.getInstance();
     final String? scoresString = prefs.getString('high_scores');
-
+    final savedTheme = await GamePreferences.getTheme();
+    
     if (scoresString != null) {
       final List<dynamic> decoded = jsonDecode(scoresString);
       setState(() {
-        _scores = decoded
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList();
+        _scores = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        _isDarkMode = savedTheme;
         _isLoading = false;
       });
     } else {
       setState(() {
         _scores = [];
+        _isDarkMode = savedTheme;
         _isLoading = false;
       });
     }
   }
 
-  // Borra el historial con la persistencia local
   Future<void> _clearScores() async {
+    final player = AudioPlayer();
+    player.play(AssetSource('audio/click.mp3')).catchError((e) => print(e));
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('high_scores');
     setState(() {
       _scores = [];
     });
-  }
 
-  // Muestra ventana flotante de confirmación exigida
-  void _showClearDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.blueGrey[800],
-          shape: const Border(),
-          title: const Text(
-            '¿BORRAR TODO?',
-            style: TextStyle(
-              color: Colors.white,
-              fontFamily: 'PixelFont',
-              fontSize: 18,
-            ),
-          ),
-          content: const Text(
-            'Se eliminaran todos los records guardados permanentemente.',
-            style: TextStyle(
-              color: Colors.white70,
-              fontFamily: 'PixelFont',
-              fontSize: 12,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                // Sonido para el botón Cancelar
-                final player = AudioPlayer();
-                player.play(AssetSource('audio/click.mp3'));
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'CANCELAR',
-                style: TextStyle(color: Colors.grey, fontFamily: 'PixelFont'),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Sonido para el botón Borrar definitivo
-                final player = AudioPlayer();
-                player.play(AssetSource('audio/click.mp3'));
-                _clearScores();
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'BORRAR',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'PixelFont',
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Historial borrado', style: TextStyle(fontFamily: 'PixelFont')),
+        backgroundColor: Colors.red,
+        duration: Duration(milliseconds: 600),
+      ),
     );
-  }
-
-  List<Map<String, dynamic>> _getFilteredScores(String difficulty) {
-    return _scores.where((score) => score['difficulty'] == difficulty).toList()
-      ..sort(
-        (a, b) => (a['time'] as int).compareTo(b['time'] as int),
-      ); // Ordena por mejor tiempo
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: _isDarkMode ? Colors.blueGrey[900] : Colors.grey[200],
+        body: const Center(child: CircularProgressIndicator(color: Colors.orange)),
+      );
+    }
+
+    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color textColor = _isDarkMode ? Colors.white : Colors.black;
+    final Color labelColor = _isDarkMode ? Colors.orange : Colors.deepOrange[700]!;
+    final Color unselectedLabelColor = _isDarkMode ? Colors.white54 : Colors.black54;
+
     return Scaffold(
-      backgroundColor: Colors.blueGrey[900],
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              const Text(
-                'MARCADORES',
+              Text(
+                'MEJORES TIEMPOS',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: textColor,
                   fontFamily: 'PixelFont',
-                  letterSpacing: 2,
                 ),
               ),
               const SizedBox(height: 15),
-
-              // Controlador de pestañas por dificultad (Fácil, Medio, Difícil)
               TabBar(
                 controller: _tabController,
-                labelColor: Colors.blueAccent,
-                unselectedLabelColor: Colors.white60,
-                indicatorColor: Colors.blueAccent,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  fontFamily: 'PixelFont',
-                ),
+                indicatorColor: labelColor,
+                labelColor: labelColor,
+                unselectedLabelColor: unselectedLabelColor,
+                labelStyle: const TextStyle(fontFamily: 'PixelFont', fontSize: 13, fontWeight: FontWeight.bold),
                 tabs: const [
-                  Tab(text: 'FACIL'),
+                  Tab(text: 'FÁCIL'),
                   Tab(text: 'MEDIO'),
-                  Tab(text: 'DIFICIL'),
+                  Tab(text: 'DIFÍCIL'),
                 ],
               ),
               const SizedBox(height: 15),
-
               Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: Colors.blue),
-                      )
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildScoresList('Fácil'),
-                          _buildScoresList('Medio'),
-                          _buildScoresList('Difícil'),
-                        ],
-                      ),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildScoreList('Fácil'),
+                    _buildScoreList('Medio'),
+                    _buildScoreList('Difícil'),
+                  ],
+                ),
               ),
               const SizedBox(height: 10),
-
-              // Botón obligatorio para borrar records
-              if (_scores.isNotEmpty)
-                TextButton.icon(
-                  onPressed: () {
-                    //  Sonido para el botón de abrir diálogo de borrar historial
-                    final player = AudioPlayer();
-                    player.play(AssetSource('audio/click.mp3'));
-                    _showClearDialog();
-                  },
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
-                  label: const Text(
-                    'BORRAR HISTORIAL',
-                    style: TextStyle(
-                      color: Colors.redAccent,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'PixelFont',
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[700],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                          side: BorderSide(color: Colors.white, width: 2),
+                        ),
+                      ),
+                      onPressed: _clearScores,
+                      child: const Text('BORRAR TODO', style: TextStyle(fontFamily: 'PixelFont', fontSize: 15)),
                     ),
                   ),
-                ),
-              const SizedBox(height: 10),
-
-              // Botón obligatorio para volver
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                      side: BorderSide(color: Colors.white, width: 3),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                          side: BorderSide(color: Colors.white, width: 2),
+                        ),
+                      ),
+                      onPressed: () {
+                        final player = AudioPlayer();
+                        player.play(AssetSource('audio/click.mp3')).catchError((e) => print(e));
+                        Navigator.pop(context);
+                      },
+                      child: const Text('VOLVER', style: TextStyle(fontFamily: 'PixelFont', fontSize: 15)),
                     ),
                   ),
-                  onPressed: () {
-                    // Sonido para el botón Volver
-                    final player = AudioPlayer();
-                    player.play(AssetSource('audio/click.mp3'));
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'VOLVER',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'PixelFont',
-                    ),
-                  ),
-                ),
+                ],
               ),
             ],
           ),
@@ -233,45 +165,51 @@ class _ScoresScreenState extends State<ScoresScreen>
     );
   }
 
-  Widget _buildScoresList(String difficulty) {
-    final filtered = _getFilteredScores(difficulty);
+  Widget _buildScoreList(String difficulty) {
+    List<Map<String, dynamic>> filtered =
+        _scores.where((s) => s['difficulty'] == difficulty).toList();
 
-    // Mensaje amigable exigido por el profe si la lista está vacía
+    filtered.sort((a, b) => (a['time'] as int).compareTo(b['time'] as int));
+
     if (filtered.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text(
-            'Aun no tienes registros.\n¡Juega tu primera partida!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: 16,
-              height: 1.5,
-              fontFamily: 'PixelFont',
-            ),
+      return Center(
+        child: Text(
+          'No hay récords aún',
+          style: TextStyle(
+            color: _isDarkMode ? Colors.white30 : Colors.black38,
+            fontFamily: 'PixelFont',
+            fontSize: 16,
           ),
         ),
       );
     }
 
+    final Color cardBackground = _isDarkMode ? Colors.blueGrey[800]! : Colors.grey[400]!;
+    final Color itemTextColor = _isDarkMode ? Colors.white : Colors.black87;
+    final Color subTextColor = _isDarkMode ? Colors.white70 : Colors.black54;
+    final Color cardBorderColor = _isDarkMode ? Colors.white24 : Colors.black26;
+
     return ListView.builder(
-      itemCount: filtered.length,
+      itemCount: filtered.length > 5 ? 5 : filtered.length,
       itemBuilder: (context, index) {
         final score = filtered[index];
-
-        // Colores especiales de medallas retro para los primeros puestos
-        Color rankColor = Colors.white30;
-        if (index == 0) rankColor = Colors.amber; // Oro
-        if (index == 1) rankColor = Colors.grey; // Plata
-        if (index == 2) rankColor = Colors.brown; // Bronce
+        Color rankColor;
+        if (index == 0) rankColor = Colors.yellow;
+        else if (index == 1) rankColor = Colors.grey[300]!;
+        else if (index == 2) rankColor = Colors.brown[300]!;
+        else rankColor = _isDarkMode ? Colors.white30 : Colors.black26;
 
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blueGrey[800],
-            border: Border(left: BorderSide(color: rankColor, width: 5)),
+            color: cardBackground,
+            border: Border(
+              left: BorderSide(color: rankColor, width: 5),
+              top: BorderSide(color: cardBorderColor),
+              right: BorderSide(color: cardBorderColor),
+              bottom: BorderSide(color: cardBorderColor),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -281,8 +219,8 @@ class _ScoresScreenState extends State<ScoresScreen>
                 children: [
                   Text(
                     '#${index + 1} - ${score['date'] ?? 'Sin fecha'}',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: subTextColor,
                       fontSize: 12,
                       fontFamily: 'PixelFont',
                     ),
@@ -290,8 +228,8 @@ class _ScoresScreenState extends State<ScoresScreen>
                   const SizedBox(height: 4),
                   Text(
                     'Intentos: ${score['attempts'] ?? 1}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: itemTextColor,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'PixelFont',
                     ),
@@ -301,8 +239,8 @@ class _ScoresScreenState extends State<ScoresScreen>
               Text(
                 '${score['time']}s',
                 style: TextStyle(
-                  color: rankColor == Colors.white30
-                      ? Colors.greenAccent
+                  color: (rankColor == Colors.white30 || rankColor == Colors.black26)
+                      ? (_isDarkMode ? Colors.greenAccent : Colors.green[800])
                       : rankColor,
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
