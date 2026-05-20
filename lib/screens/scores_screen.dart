@@ -11,7 +11,8 @@ class ScoresScreen extends StatefulWidget {
   State<ScoresScreen> createState() => _ScoresScreenState();
 }
 
-class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderStateMixin {
+class _ScoresScreenState extends State<ScoresScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Map<String, dynamic>> _scores = [];
   bool _isLoading = true;
@@ -28,11 +29,13 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
     final prefs = await SharedPreferences.getInstance();
     final String? scoresString = prefs.getString('high_scores');
     final savedTheme = await GamePreferences.getTheme();
-    
+
     if (scoresString != null) {
       final List<dynamic> decoded = jsonDecode(scoresString);
       setState(() {
-        _scores = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        _scores = decoded
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
         _isDarkMode = savedTheme;
         _isLoading = false;
       });
@@ -45,9 +48,139 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
     }
   }
 
+  void _playSound() {
+    SharedPreferences.getInstance()
+        .then((prefs) {
+          final bool soundEnabled = prefs.getBool('sound_enabled') ?? true;
+          if (soundEnabled) {
+            final player = AudioPlayer();
+            player.play(AssetSource('audio/click.mp3')).catchError((e) {
+              print('Audio no pudo reproducirse en este navegador: $e');
+            });
+          }
+        })
+        .catchError((e) {
+          print('Error al leer preferencias de audio: $e');
+        });
+  }
+
+  void _showConfirmationDialog() {
+    _playSound();
+
+    print("¡Botón presionado!");
+    print("¿Tiene historial?: ${_scores.isNotEmpty}");
+    print("Cantidad de records: ${_scores.length}");
+
+    final Color dialogBackground = _isDarkMode
+        ? const Color(0xFF263238)
+        : Colors.white;
+    final Color dialogTextColor = _isDarkMode ? Colors.white : Colors.black;
+
+    // >>> ESTO SE AGREGÓ: Validamos si hay elementos en el historial <<<
+    final bool hasHistory = _scores.isNotEmpty;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: dialogBackground,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: Colors.orange, width: 3),
+          ),
+          // >>> ESTO SE MODIFICÓ: Título dinámico con tu texto exacto <<<
+          title: Text(
+            hasHistory
+                ? '¿ESTÁS SEGURO DE BORRAR EL HISTORIAL?'
+                : 'SIN REGISTROS',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'PixelFont',
+              color: hasHistory ? Colors.red[600] : Colors.orange,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          // >>> ESTO SE MODIFICÓ: Contenido dinámico con tu texto exacto <<<
+          content: Text(
+            hasHistory
+                ? 'ESTA ACCIÓN NO SE PUEDE DESHACER.'
+                : 'AÚN NO HAY REGISTROS DE PARTIDAS.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'PixelFont',
+              color: dialogTextColor,
+              fontSize: 12,
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
+          // >>> ESTO SE MODIFICÓ: Botones según si hay o no historial <<<
+          actions: hasHistory
+              ? [
+                  // CASO SÍ HAY HISTORIAL: Botones "VOLVER" y "SÍ, SEGURO"
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[600],
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
+                    onPressed: () {
+                      _playSound();
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text(
+                      'VOLVER',
+                      style: TextStyle(fontFamily: 'PixelFont', fontSize: 12),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[700],
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(dialogContext);
+                      await _clearScores();
+                    },
+                    child: const Text(
+                      'SÍ, SEGURO',
+                      style: TextStyle(fontFamily: 'PixelFont', fontSize: 12),
+                    ),
+                  ),
+                ]
+              : [
+                  // CASO NO HAY HISTORIAL: Solo botón "VOLVER"
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
+                    onPressed: () {
+                      _playSound();
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text(
+                      'VOLVER',
+                      style: TextStyle(fontFamily: 'PixelFont', fontSize: 12),
+                    ),
+                  ),
+                ],
+        );
+      },
+    );
+  }
+
   Future<void> _clearScores() async {
-    final player = AudioPlayer();
-    player.play(AssetSource('audio/click.mp3')).catchError((e) => print(e));
+    _playSound();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('high_scores');
@@ -55,13 +188,18 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
       _scores = [];
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Historial borrado', style: TextStyle(fontFamily: 'PixelFont')),
-        backgroundColor: Colors.red,
-        duration: Duration(milliseconds: 600),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Historial borrado',
+            style: TextStyle(fontFamily: 'PixelFont'),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(milliseconds: 600),
+        ),
+      );
+    }
   }
 
   @override
@@ -69,14 +207,22 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
     if (_isLoading) {
       return Scaffold(
         backgroundColor: _isDarkMode ? Colors.blueGrey[900] : Colors.grey[200],
-        body: const Center(child: CircularProgressIndicator(color: Colors.orange)),
+        body: const Center(
+          child: CircularProgressIndicator(color: Colors.orange),
+        ),
       );
     }
 
-    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color backgroundColor = _isDarkMode
+        ? Colors.blueGrey[900]!
+        : Colors.grey[200]!;
     final Color textColor = _isDarkMode ? Colors.white : Colors.black;
-    final Color labelColor = _isDarkMode ? Colors.orange : Colors.deepOrange[700]!;
-    final Color unselectedLabelColor = _isDarkMode ? Colors.white54 : Colors.black54;
+    final Color labelColor = _isDarkMode
+        ? Colors.orange
+        : Colors.deepOrange[700]!;
+    final Color unselectedLabelColor = _isDarkMode
+        ? Colors.white54
+        : Colors.black54;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -100,7 +246,11 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
                 indicatorColor: labelColor,
                 labelColor: labelColor,
                 unselectedLabelColor: unselectedLabelColor,
-                labelStyle: const TextStyle(fontFamily: 'PixelFont', fontSize: 13, fontWeight: FontWeight.bold),
+                labelStyle: const TextStyle(
+                  fontFamily: 'PixelFont',
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
                 tabs: const [
                   Tab(text: 'FÁCIL'),
                   Tab(text: 'MEDIO'),
@@ -132,8 +282,11 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
                           side: BorderSide(color: Colors.white, width: 2),
                         ),
                       ),
-                      onPressed: _clearScores,
-                      child: const Text('BORRAR TODO', style: TextStyle(fontFamily: 'PixelFont', fontSize: 15)),
+                      onPressed: _showConfirmationDialog,
+                      child: const Text(
+                        'BORRAR TODO',
+                        style: TextStyle(fontFamily: 'PixelFont', fontSize: 15),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -149,11 +302,13 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
                         ),
                       ),
                       onPressed: () {
-                        final player = AudioPlayer();
-                        player.play(AssetSource('audio/click.mp3')).catchError((e) => print(e));
+                        _playSound();
                         Navigator.pop(context);
                       },
-                      child: const Text('VOLVER', style: TextStyle(fontFamily: 'PixelFont', fontSize: 15)),
+                      child: const Text(
+                        'VOLVER',
+                        style: TextStyle(fontFamily: 'PixelFont', fontSize: 15),
+                      ),
                     ),
                   ),
                 ],
@@ -166,15 +321,16 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
   }
 
   Widget _buildScoreList(String difficulty) {
-    List<Map<String, dynamic>> filtered =
-        _scores.where((s) => s['difficulty'] == difficulty).toList();
+    List<Map<String, dynamic>> filtered = _scores
+        .where((s) => s['difficulty'] == difficulty)
+        .toList();
 
     filtered.sort((a, b) => (a['time'] as int).compareTo(b['time'] as int));
 
     if (filtered.isEmpty) {
       return Center(
         child: Text(
-          'No hay récords aún',
+          'No hay records aún, ¡Juega tu primera partida!',
           style: TextStyle(
             color: _isDarkMode ? Colors.white30 : Colors.black38,
             fontFamily: 'PixelFont',
@@ -184,7 +340,9 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
       );
     }
 
-    final Color cardBackground = _isDarkMode ? Colors.blueGrey[800]! : Colors.grey[400]!;
+    final Color cardBackground = _isDarkMode
+        ? Colors.blueGrey[800]!
+        : Colors.grey[400]!;
     final Color itemTextColor = _isDarkMode ? Colors.white : Colors.black87;
     final Color subTextColor = _isDarkMode ? Colors.white70 : Colors.black54;
     final Color cardBorderColor = _isDarkMode ? Colors.white24 : Colors.black26;
@@ -194,10 +352,14 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
       itemBuilder: (context, index) {
         final score = filtered[index];
         Color rankColor;
-        if (index == 0) rankColor = Colors.yellow;
-        else if (index == 1) rankColor = Colors.grey[300]!;
-        else if (index == 2) rankColor = Colors.brown[300]!;
-        else rankColor = _isDarkMode ? Colors.white30 : Colors.black26;
+        if (index == 0)
+          rankColor = Colors.yellow;
+        else if (index == 1)
+          rankColor = Colors.grey[300]!;
+        else if (index == 2)
+          rankColor = Colors.brown[300]!;
+        else
+          rankColor = _isDarkMode ? Colors.white30 : Colors.black26;
 
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
@@ -239,7 +401,9 @@ class _ScoresScreenState extends State<ScoresScreen> with SingleTickerProviderSt
               Text(
                 '${score['time']}s',
                 style: TextStyle(
-                  color: (rankColor == Colors.white30 || rankColor == Colors.black26)
+                  color:
+                      (rankColor == Colors.white30 ||
+                          rankColor == Colors.black26)
                       ? (_isDarkMode ? Colors.greenAccent : Colors.green[800])
                       : rankColor,
                   fontSize: 20,
