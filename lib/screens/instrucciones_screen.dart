@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../core/game_preferences.dart';
 
 class InstructionsScreen extends StatefulWidget {
@@ -27,7 +26,9 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color backgroundColor = _isDarkMode
+        ? Colors.blueGrey[900]!
+        : Colors.grey[200]!;
     final Color textColor = _isDarkMode ? Colors.white : Colors.black;
 
     return Scaffold(
@@ -52,27 +53,32 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                   children: [
                     _InstructionTile(
                       number: '1',
-                      text: 'El juego consiste en descubrir todas las casillas del tablero sin tocar las minas ocultas.',
+                      text:
+                          'El juego consiste en descubrir todas las casillas del tablero sin tocar las minas ocultas.',
                       isDarkMode: _isDarkMode,
                     ),
                     _InstructionTile(
                       number: '2',
-                      text: 'Haz clic en una casilla para revelar lo que hay debajo.',
+                      text:
+                          'Haz clic en una casilla para revelar lo que hay debajo.',
                       isDarkMode: _isDarkMode,
                     ),
                     _InstructionTile(
                       number: '3',
-                      text: 'Los numeros indican cuantas minas hay en las casillas de alrededor.',
+                      text:
+                          'Los numeros indican cuantas minas hay en las casillas de alrededor.',
                       isDarkMode: _isDarkMode,
                     ),
                     _InstructionTile(
                       number: '4',
-                      text: 'Usa un clic largo para colocar una bandera donde sospeches que hay una mina.',
+                      text:
+                          'Usa un clic largo para colocar una bandera donde sospeches que hay una mina.',
                       isDarkMode: _isDarkMode,
                     ),
                     _InstructionTile(
                       number: '5',
-                      text: '¡Ganas si logras descubrir todas las casillas que no tienen minas!',
+                      text:
+                          '¡Ganas si logras descubrir todas las casillas que no tienen minas!',
                       isDarkMode: _isDarkMode,
                     ),
                   ],
@@ -91,11 +97,8 @@ class _InstructionsScreenState extends State<InstructionsScreen> {
                       side: BorderSide(color: Colors.white, width: 2),
                     ),
                   ),
-                  onPressed: () {
-                    final player = AudioPlayer();
-                    player.play(AssetSource('audio/click.mp3')).catchError((e) {
-                      print("Error de audio: $e");
-                    });
+                  onPressed: () async {
+                    await GamePreferences.playClickSound();
                     Navigator.pop(context);
                   },
                   child: const Text(

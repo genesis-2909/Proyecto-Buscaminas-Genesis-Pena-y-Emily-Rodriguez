@@ -20,7 +20,7 @@ class _GameScreenState extends State<GameScreen> {
   int _secondsElapsed = 0;
   bool _isFirstClick = true;
   String _difficultyName = 'Principiante';
-  
+
   // Variable para controlar el tema persistente en la partida
   bool _isDarkMode = true;
 
@@ -34,6 +34,22 @@ class _GameScreenState extends State<GameScreen> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  void _playSound() {
+    SharedPreferences.getInstance()
+        .then((prefs) {
+          final bool soundEnabled = prefs.getBool('sound_enabled') ?? true;
+          if (soundEnabled) {
+            final player = AudioPlayer();
+            player.play(AssetSource('audio/click.mp3')).catchError((e) {
+              print('Audio no pudo reproducirse: $e');
+            });
+          }
+        })
+        .catchError((e) {
+          print('Error al leer preferencias de audio: $e');
+        });
   }
 
   // Carga la dificultad y el tema guardados dinámicamente y crea el tablero lógico
@@ -164,31 +180,29 @@ class _GameScreenState extends State<GameScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              final player = AudioPlayer();
-              player.play(AssetSource('audio/click.mp3'));
+              _playSound();
               Navigator.pop(context);
-              _setupGame(); 
+              _setupGame();
             },
             child: Text(
               'REINTENTAR',
               style: TextStyle(
-                color: _isDarkMode ? Colors.yellow : Colors.purple[700], 
-                fontFamily: 'PixelFont'
+                color: _isDarkMode ? Colors.yellow : Colors.purple[700],
+                fontFamily: 'PixelFont',
               ),
             ),
           ),
           TextButton(
             onPressed: () {
-              final player = AudioPlayer();
-              player.play(AssetSource('audio/click.mp3'));
-              Navigator.pop(context); 
-              Navigator.pop(context); 
+              _playSound();
+              Navigator.pop(context);
+              Navigator.pop(context);
             },
             child: Text(
               'MENU',
               style: TextStyle(
-                color: _isDarkMode ? Colors.white : Colors.black87, 
-                fontFamily: 'PixelFont'
+                color: _isDarkMode ? Colors.white : Colors.black87,
+                fontFamily: 'PixelFont',
               ),
             ),
           ),
@@ -208,7 +222,9 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
 
-    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color backgroundColor = _isDarkMode
+        ? Colors.blueGrey[900]!
+        : Colors.grey[200]!;
     final Color textColor = _isDarkMode ? Colors.white : Colors.black;
 
     return Scaffold(
@@ -307,8 +323,7 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                   onPressed: () {
-                    final player = AudioPlayer();
-                    player.play(AssetSource('audio/click.mp3'));
+                    _playSound();
                     Navigator.pop(context);
                   },
                   child: const Text(

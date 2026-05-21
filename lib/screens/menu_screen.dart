@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../core/game_preferences.dart';
 import 'instrucciones_screen.dart';
 import 'settings_screen.dart';
@@ -33,8 +32,9 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final audioPlayer = AudioPlayer();
-    final Color backgroundColor = _isDarkMode ? Colors.blueGrey[900]! : Colors.grey[200]!;
+    final Color backgroundColor = _isDarkMode
+        ? Colors.blueGrey[900]!
+        : Colors.grey[200]!;
     final Color textColor = _isDarkMode ? Colors.white : Colors.black;
 
     return Scaffold(
@@ -56,63 +56,57 @@ class _MenuScreenState extends State<MenuScreen> {
                       fontFamily: 'PixelFont',
                       letterSpacing: 4,
                       shadows: [
-                        Shadow(offset: const Offset(-3, -3), color: _isDarkMode ? Colors.black : Colors.white24),
-                        Shadow(offset: const Offset(3, -3), color: _isDarkMode ? Colors.black : Colors.white24),
-                        Shadow(offset: const Offset(3, 3), color: _isDarkMode ? Colors.black : Colors.white24),
-                        Shadow(offset: const Offset(-3, 3), color: _isDarkMode ? Colors.black : Colors.white24),
+                        Shadow(
+                          offset: const Offset(-3, -3),
+                          color: _isDarkMode ? Colors.black : Colors.white24,
+                        ),
+                        Shadow(
+                          offset: const Offset(3, -3),
+                          color: _isDarkMode ? Colors.black : Colors.white24,
+                        ),
+                        Shadow(
+                          offset: const Offset(3, 3),
+                          color: _isDarkMode ? Colors.black : Colors.white24,
+                        ),
+                        Shadow(
+                          offset: const Offset(-3, 3),
+                          color: _isDarkMode ? Colors.black : Colors.white24,
+                        ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 60),
-                _buildMenuButton(
-                  audioPlayer,
-                  context,
-                  'JUGAR',
-                  Colors.green,
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const GameScreen()),
-                    ).then((_) => _updateTheme()); // Sincroniza el tema al regresar de la partida
-                  },
-                ),
-                _buildMenuButton(
-                  audioPlayer,
-                  context,
-                  'MARCADORES', // Nombre original intacto
-                  Colors.orange,
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ScoresScreen()),
-                    ).then((_) => _updateTheme());
-                  },
-                ),
-                _buildMenuButton(
-                  audioPlayer,
-                  context,
-                  'CONFIGURACION',
-                  Colors.purple,
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                    ).then((_) => _updateTheme()); // Cambia el color del menú al volver de ajustes
-                  },
-                ),
-                _buildMenuButton(
-                  audioPlayer,
-                  context,
-                  'INSTRUCCIONES', // Cambiado a INSTRUCCIONES tal como lo pediste
-                  Colors.blue,
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const InstructionsScreen()),
-                    ).then((_) => _updateTheme());
-                  },
-                ),
+                _buildMenuButton(context, 'JUGAR', Colors.green, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const GameScreen()),
+                  ).then((_) => _updateTheme());
+                }),
+                _buildMenuButton(context, 'MARCADORES', Colors.orange, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ScoresScreen(),
+                    ),
+                  ).then((_) => _updateTheme());
+                }),
+                _buildMenuButton(context, 'CONFIGURACION', Colors.purple, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  ).then((_) => _updateTheme());
+                }),
+                _buildMenuButton(context, 'INSTRUCCIONES', Colors.blue, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const InstructionsScreen(),
+                    ),
+                  ).then((_) => _updateTheme());
+                }),
               ],
             ),
           ),
@@ -122,7 +116,6 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _buildMenuButton(
-    AudioPlayer player,
     BuildContext context,
     String text,
     Color color,
@@ -141,13 +134,15 @@ class _MenuScreenState extends State<MenuScreen> {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.zero,
-              side: BorderSide(color: _isDarkMode ? Colors.white : Colors.black87, width: 4),
+              side: BorderSide(
+                color: _isDarkMode ? Colors.white : Colors.black87,
+                width: 4,
+              ),
             ),
           ),
-          onPressed: () {
-            player.play(AssetSource('audio/click.mp3')).catchError((e) {
-              print("Error de audio: $e");
-            });
+          onPressed: () async {
+            // <-- Se añadió async aquí
+            await GamePreferences.playClickSound(); // <-- Ahora el await funciona perfecto
             onPressed();
           },
           child: Text(

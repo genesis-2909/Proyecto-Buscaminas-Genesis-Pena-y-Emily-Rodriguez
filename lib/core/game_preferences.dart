@@ -1,8 +1,14 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class GamePreferences {
   // Guarda la dificultad seleccionada
-  static Future<void> saveDifficulty(String name, int rows, int cols, int mines) async {
+  static Future<void> saveDifficulty(
+    String name,
+    int rows,
+    int cols,
+    int mines,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('diff_name', name);
     await prefs.setInt('diff_rows', rows);
@@ -31,5 +37,28 @@ class GamePreferences {
   static Future<bool> getTheme() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('is_dark_mode') ?? true;
+  }
+
+  static Future<void> saveSound(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sound_enabled', enabled);
+  }
+
+  // Lee si el sonido está activo (por defecto true si no existe)
+  static Future<bool> getSound() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('sound_enabled') ?? true;
+  }
+
+  // Método centralizado para reproducir el click.
+  // CUALQUIER pantalla puede llamarlo y él decidirá si suena o no.
+  static Future<void> playClickSound() async {
+    final bool soundEnabled = await getSound();
+    if (soundEnabled) {
+      final player = AudioPlayer();
+      await player
+          .play(AssetSource('audio/click.mp3'))
+          .catchError((e) => print("Error de audio: $e"));
+    }
   }
 }
